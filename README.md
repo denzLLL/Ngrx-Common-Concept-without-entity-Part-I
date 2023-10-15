@@ -1,64 +1,79 @@
 
 # Ngrx Common Concept (without entity, Part I)
 
+<img src="./ngrx-flow.png">
 
+- [Установка Angular CLI](#install-angular-cli)
+- [Запуск Development Backend Server](#run-backend-server)
+- [Запуск UI Server](#run-ui-server)
+- [Добавляем ngRx](#add-ngrx)
+- [Добавляем `feature`](#add-feature)
+- [Обновляем `state store`](#update-state-store)
+- [`Action`](#action)
+- [`Reducer`](#reducer)
+- [Как прочитать данные из `store` (напрямую из store)](#how-read-data-from-store)
+- [`Selector` - _оптимальный_ вариант получения данных из `store`](#selector)
+- [Получаем state конкретной `feature`](#get-state-feature-through-selectors)
+- [Effects](#effects)
+- [Dev Tools for NgRx](#dev-tools-for-ngrx)
 
-## Установка Angular CLI
+## Install Angular CLI
 
 При помощи команды ниже angular-cli будет установлена глобально на вашей машине:
+`npm install -g @angular/cli `
 
-    npm install -g @angular/cli 
-
-## Запуск Development Backend Server
+## Run Backend Server
 
 Мы можем запустить backend приложение при помощи следующей команды:
 
-    npm run server
+`npm run server`
 
 Это небольшой написанный на Node REST API сервер.
 
-## Чтобы запустить Development UI Server
+## Run UI Server
 
 Чтобы запустить frontend часть нашего кода, мы будем использовать Angular CLI:
 
-    npm start 
+`npm start `
 
 Приложение доступно на порту 4200: [http://localhost:4200](http://localhost:4200)
 
+## Add ngRx
+
+- `ng add @ngrx/store@latest`
+- `ng add @ngrx/store-devtools@latest`
 
 
-## Добавляем ngRx:
+- Обновится `app.module.ts`
+- Можем использовать _Redux DevTools Extension_ в браузере
 
-> ng add @ngrx/store@latest
->
-> ng add @ngrx/store-devtools@latest
+## Add `feature`
 
-- Обновится app.module.ts
-- Можем использовать Redux DevTools Extension в браузере
+Добавим `store` в `Auth.module`:
 
-## Добавляем feature
+`ng g store auth/Auth --module auth.module.ts`
 
-Добавим ```store``` в ```Auth.module```:
+- Тем самым мы создадим: `ngrx-course\src\app\auth\reducers\index.ts`
+- зарегистрируем в `Auth.module` reducer: 
+```
+StoreModule.forFeature(fromAuth.authFeatureKey, authReducer),
+```
 
-> ng g store auth/Auth --module auth.module.ts
+## Update `state store`
 
-Тем самым мы создадим: ```ngrx-course\src\app\auth\reducers\index.ts```,\
-И зарегистрируем ```Auth.module``` наш reducer ```StoreModule.forFeature(fromAuth.authFeatureKey, fromAuth.reducers, ......```
-в ```auth.module.ts```
+Чтобы обновить `state store`: 
+- мы в компоненте inject-им `store` (`Observable`) 
+- вызываем на нем `dispatch` метод пробрасывая в него соотв-й `action`:
 
-
-
-## Обновляем state store
-
-Чтобы обновить ```state store```  мы в компоненте inject-им ```store``` (```Observable```) 
-и вызываем на нем ```dispatch``` метод пробрасывая в него
-соотв-й ```action```:
-> this.store.dispatch(login({user}));
+```
+this.store.dispatch(login({user}));
+```
+(`login.component.ts`)
 
 
+## `Action`
+В квадратных скобках указываем место, откуда срабатывает `action`, далее идет описание `action`
 
-## Action
-В квадратных скобках указываем место, откуда срабатывает ```action```, далее идет описание ```action```
 ```
 export const login = createAction(
     '[Login Page] User Login',
@@ -66,48 +81,52 @@ export const login = createAction(
 )
 ```
 
+## `Reducer`
 
-## Reducer
+Создадим reducer `authReducer`, который будет обрабатывать наши `action` и обновлять `state`, 
+зарегистрируем его в `Auth.module`:
+```
+StoreModule.forFeature(fromAuth.authFeatureKey, authReducer),
+```
 
-Создадим редьюсер ```authReducer```, который будет обрабатывать наши ```action``` и зарегистрируем его в ```Auth.module```:
-
-> StoreModule.forFeature(fromAuth.authFeatureKey, authReducer),
-
-## Как прочитать данные из store (напрямую из store)
+## How read data from `store`
 
 Инжектим в конструкторе:
->  (private store: Store<AppState>)
-
-
-```store``` - это Observable, на который мы можем подписаться, чтобы получать store актуальный:
-
+```ts
+(private store: Store<AppState>)
 ```
+
+`store` - это `Observable`, на который мы можем подписаться, чтобы получать актуальный `state`:
+
+```ts
 this.store.subscribe((state) => {
     console.log('state:', state)
 });
 this.isLoggedIn$ = this.store.pipe(map((state) => !!state['auth'].user));
 this.isLoggedOut$ = this.store.pipe(map((state) => !state['auth'].user));
 ```
+(`app.component.ts`)
 
-## Как прочитать данные из store (selectors)
+## Selector
 
-Селекоры позволяют получать значение лишь после того как оно изменило свое значение
+Selectors позволяют получать значение лишь после того, как оно изменило свое значение
 т.е. сохранять предыдущее значение в памяти (в отличие от подписки выше)
 
-```
+```ts
+// src/app/auth/selectors/auth.selectors.ts
 export const isLoggedIn = createSelector(
     state => state['auth'],
     (auth) => !!auth.user
 );
 
+// app.component.ts
 export const isLoggedOut = createSelector(
     isLoggedIn, // используем isLoggedIn селектор, чтобы сразу получить нужное значение и преобразовать его
     loggedIn => !loggedIn
 );
 ```
 
-Функции в ```createSelector``` похожи на обычную ```map``` ф-ю, но сохраняет значение в памяти.
-
+Функции в `createSelector` похожи на обычную `map` ф-ю, но сохраняет значение в памяти. \
 Используем селектор:
 
 ```
@@ -115,10 +134,11 @@ this.isLoggedIn$ = this.store.pipe(select(isLoggedIn));
 this.isLoggedOut$ = this.store.pipe(select(isLoggedOut));
 ```
 
-## feature selectors
-Вычленяем state лишь ```feature```
+## get state feature through selectors
 
-```
+Получаем state конкретной `feature`:
+
+```ts
 export const selectAuthState = createFeatureSelector<AuthState>('auth'); // берем нашу feature
 export const isLoggedIn = createSelector(
     selectAuthState,
@@ -128,26 +148,27 @@ export const isLoggedIn = createSelector(
 
 ## Effects
 
-Эффекты позволяют реализовать side-effect, например, если ```action``` вызывает запрос к б.д.
-или сохранение данных в ```localstorage```
+Эффекты позволяют реализовать side-effect, например, если `action` вызывает запрос к б.д.
+или сохранение данных в `localstorage`
 
-В ```app.module.ts``` добавим ```EffectsModule.forRoot```:
+В `app.module.ts` добавим `EffectsModule.forRoot`:
 
-```
+
+```ts
 imports: [
     EffectsModule.forRoot([])
 ]
 ```
 
-в ```auth.module``` добавим для ```EffectsModule.forFeature```:
+в `auth.module` добавим для `EffectsModule.forFeature`:
 
-```
+```ts
 imports: [
     EffectsModule.forFeature([AuthEffect])
 ]
 ```
 
-```
+```ts
 login$ = createEffect(() => {
     return this.actions$.pipe(
         ofType(login),
@@ -158,15 +179,17 @@ login$ = createEffect(() => {
 },
 {dispatch: false}) // этот эффект не диспатчит побочные action, превентим infinite loop
 ```
+(`src/app/auth/effects/auth.effect.ts`)
+
 
 ## Dev Tools for NgRx
 
 ### Router Store and the Time-Travelling Debugger
 
-Зарегистрируем редьюсер на роутинг (actions, router info -  state etc):
+Зарегистрируем reducer на роутинг (actions, router info -  state etc): \
+В основном модуле добавим `StoreRouterConnectingModule` (`app.module.ts`):
 
-В основном модуле добавим ```StoreRouterConnectingModule``` (```app.module.ts```):
-```
+```ts
 StoreRouterConnectingModule.forRoot({
     stateKey: 'router',
     routerState: RouterState.Minimal
@@ -181,13 +204,14 @@ export const reducers: ActionReducerMap<AppState> = {
 ```
 
 ### Run time check
-- Проверяем, что ```state``` в ```reducer``` иммутабельный (т.е. проверяем, что ```state``` в reducer меняется корректно). *1
-- Проверяем, что ```actions``` иммутабельный *2
+- Проверяем, что `state` в `reducer` иммутабельный (т.е. проверяем, что `state` в reducer меняется корректно). *1
+- Проверяем, что `actions` иммутабельный *2
 - Проверяем, что actions Serializability *3 (обьект распарсится в строку)
 - Проверяем, что  state Serializability *4
 
-Добавляем в ```StoreModule```:
-```
+Добавляем в `StoreModule`:
+
+```ts
 StoreModule.forRoot(reducers, {
     runtimeChecks: {
         strictStateImmutability: true,
@@ -197,8 +221,8 @@ StoreModule.forRoot(reducers, {
     }
 }),
 ```
+
 ###  metareducer
 
-```metareducer``` - это reducer, который вызывается до выполнения стандартного reducer
-
-см. logger
+`metareducer` - это reducer, который вызывается до выполнения стандартного reducer. \
+см. `logger`

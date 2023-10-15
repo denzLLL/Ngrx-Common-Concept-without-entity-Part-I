@@ -1,13 +1,12 @@
-import {Injectable} from '@angular/core';
-import {Actions, createEffect, ofType} from '@ngrx/effects';
-import {login, logout} from '../actionns';
-import {tap} from 'rxjs/operators';
-import {Router} from '@angular/router';
+import { Injectable } from '@angular/core';
+import { Actions, createEffect, ofType } from '@ngrx/effects';
+import { login, logout } from '../actionns';
+import { tap } from 'rxjs/operators';
+import { Router } from '@angular/router';
 
 
 @Injectable()
 export class AuthEffect {
-
   login$ = createEffect(() => {
       return this.actions$.pipe(
         ofType(login),
@@ -16,7 +15,7 @@ export class AuthEffect {
         })
       )
     },
-    {dispatch: false}
+    { dispatch: false }
   ) // этот эффект не диспатчит побочные action, превентим infinite loop
 
 
@@ -28,11 +27,9 @@ export class AuthEffect {
         this.router.navigateByUrl('/login');
       })
     )
-  }, {dispatch: false});
+  }, { dispatch: false });
 
   constructor(private actions$: Actions, private router: Router) {
-
-
     // simple way (not ngRX implementations) I realization
     // actions$.subscribe(action => {
     //   if (action.type == '[Login Page] User Login') {

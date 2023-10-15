@@ -3,7 +3,6 @@ import {environment} from '../../../environments/environment';
 import {User} from '../model/user.model';
 import {login, logout} from '../actionns';
 
-
 export const authFeatureKey = 'auth';
 
 export interface AuthState {
